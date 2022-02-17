@@ -4,8 +4,6 @@
 using namespace std;
 
 #define CHECKS_COUNT 3
-#define RANDOM_FROM -100000
-#define RANDOM_TO 100000
 
 enum SolutionCount {
     zero = 0,
@@ -13,6 +11,7 @@ enum SolutionCount {
     infinity = -1,
 };
 
+float** enterMatrix(int&, int&);
 float** createMatrix(int, int);
 void freeMatrix(float**, int);
 void copyMatrix(float**, float**, int, int);
@@ -34,29 +33,15 @@ int main() {
     setlocale(LC_ALL, "Rus");
     int rows, cols;
 
-    cout << "Введите размерность матрицы(m, n)(включая столбец свободных коэф.): ";
-    cin >> rows >> cols;
-    while (rows < 1 || cols < 1 || cin.fail()) {
-        cout << "Размерность введена неверно" << endl;
-        cout << "Введите заново(m > 0, n > 0): ";
-        cin >> rows >> cols;
-        if (cin.fail()) continue;
-    }
-    cout << "Полученная рамерность: " << rows << "x" << cols << endl << endl;
 
-    float** matrix = createMatrix(rows, cols);
+    float** matrix = enterMatrix(rows, cols);
     float** sourceMatrix = createMatrix(rows, cols);
     float** generalSolution = createMatrix(cols - 1, cols);
     float* sol = new float[cols - 1]{};
 
-    cout << "Заполните строки(включая свободные коэф.)" << endl;
-    for (int r = 0; r < rows; r++) {
-        cout << "Введите " << r + 1 << " строку матрицы(разделяя эл-ты пробелом): ";
-        for (int c = 0; c < cols; c++) cin >> matrix[r][c];
-    }
     copyMatrix(matrix, sourceMatrix, rows, cols);
 
-    cout << endl <<  "Исходная матрица" << endl;
+    cout << endl << "Исходная матрица" << endl;
     printMatrix(matrix, rows, cols);
 
     cout << endl << "Шаг 1 (приведение к верхетреугольному виду)..." << endl;
@@ -74,16 +59,19 @@ int main() {
         cout << "Система имеет единственное решение" << endl;
         cout << "Общее решение: " << endl;
         printGeneralSolution(generalSolution, cols - 1, cols);
-        cout << "Необщее решение: " << endl;
+        cout << "Частное решение: " << endl;
         printSpecificSolution(sol, cols - 1);
         cout << endl;
-        
+
         cout << endl << "Шаг 4 (проверка)..." << endl;
         checkSpecificSolution(sourceMatrix, rows, cols, sol);
         break;
     case SolutionCount(infinity):
         cout << "Система имеет бесконечное множество решений" << endl;
         printGeneralSolution(generalSolution, cols - 1, cols);
+
+        cout << endl << "Шаг 4 (проверка)..." << endl;
+        checkGeneralSolution(sourceMatrix, rows, cols, generalSolution);
         break;
     }
 
@@ -92,6 +80,28 @@ int main() {
     delete[] generalSolution;
     delete[] sol;
     return 0;
+}
+
+float** enterMatrix(int& rows, int& cols) {
+    cout << "Введите размерность расширенной матрицы(m, n): ";
+    cin >> rows >> cols;
+    while (rows < 1 || cols < 1 || cin.fail()) {
+        cout << "Размерность введена неверно" << endl;
+        cout << "Введите заново(m > 0, n > 0): ";
+        cin >> rows >> cols;
+        if (cin.fail()) continue;
+    }
+    cout << "Полученная рамерность: " << rows << "x" << cols << endl << endl;
+
+    float** newMatrix = createMatrix(rows, cols);
+
+    cout << "Заполните строки(включая свободные коэф.)" << endl;
+    for (int r = 0; r < rows; r++) {
+        cout << "Введите " << r + 1 << " строку матрицы(разделяя эл-ты пробелом): ";
+        for (int c = 0; c < cols; c++) cin >> newMatrix[r][c];
+    }
+
+    return newMatrix;
 }
 
 float** createMatrix(int rows, int cols) {
@@ -139,9 +149,9 @@ void printGeneralSolution(float** generalSolution, int rows, int cols) {
         for (int col = 0; col < cols - 1; col++) {
             if (generalSolution[x][col] == 0.0 || x == col) continue;
             if (allZeros) allZeros = false;
+            if (generalSolution[x][col] < 0) printf("- ");
             if (firstWritten) {
                 if (generalSolution[x][col] >= 0) printf("+ ");
-                else printf("- ");
             }
             if (!firstWritten) firstWritten = true;
             if (abs(generalSolution[x][col]) != 1.0) printf("%.2f*", abs(generalSolution[x][col]));
@@ -151,9 +161,9 @@ void printGeneralSolution(float** generalSolution, int rows, int cols) {
             printf("t, t c- R\n");
         }
         else {
+            if (generalSolution[x][cols - 1] < 0) printf("- ");
             if (firstWritten) {
-                if (generalSolution[x][cols - 1] < 0) printf("- ");
-                else printf("+ ");
+                if (generalSolution[x][cols - 1] >= 0) printf("+ ");
             }
             printf("%.2f\n", abs(generalSolution[x][cols - 1]));
         }
@@ -189,42 +199,44 @@ void printSpecificSolution(float* sol, int size) {
 
 void toUpperTriangularView(float** matrix, int rows, int cols) {
     for (int globalCol = 0, globalRow = 0; globalCol < cols && globalRow < rows; globalCol++, globalRow++) {
-            float firstEl = matrix[globalRow][globalCol];
-            if (firstEl == 0.0) {
-                bool found = false;
-                for (int row = globalRow; row < rows; row++) {
-                    if (matrix[row][globalCol] != 0) {
-                        found = true;
-                        swapRows(matrix, cols, globalRow, row);
-                        firstEl = matrix[globalRow][globalCol];
-                        break;
-                    }
-                }
-                if (!found) {
-                    globalRow--;
-                    continue;
+        float firstEl = matrix[globalRow][globalCol];
+        if (firstEl == 0.0) {
+            bool found = false;
+            for (int row = globalRow; row < rows; row++) {
+                if (matrix[row][globalCol] != 0) {
+                    found = true;
+                    swapRows(matrix, cols, globalRow, row);
+                    firstEl = matrix[globalRow][globalCol];
+                    break;
                 }
             }
-
-            for (int col = globalCol; col < cols; col++) {
-                matrix[globalRow][col] /= firstEl;
-            }
-
-            if (globalRow == rows - 1) {
+            if (!found) {
+                globalRow--;
                 continue;
             }
+        }
 
-            float* rowNow = new float[cols - globalCol];
-            for (int col = 0; col < cols - globalCol; col++) rowNow[col] = matrix[globalRow][col + globalCol];
+        for (int col = globalCol; col < cols; col++) {
+            matrix[globalRow][col] /= firstEl;
+        }
 
-            for (int row = globalRow + 1; row < rows; row++) {
-                float coef = matrix[row][globalCol];
-                for (int col = globalCol; col < cols; col++) {
-                    matrix[row][col] -= (rowNow[col - globalCol] * coef);
-                }
+        if (globalRow == rows - 1) {
+            continue;
+        }
+
+        float* rowNow = new float[cols - globalCol];
+        for (int col = 0; col < cols - globalCol; col++) rowNow[col] = matrix[globalRow][col + globalCol];
+
+        for (int row = globalRow + 1; row < rows; row++) {
+            float coef = matrix[row][globalCol];
+            for (int col = globalCol; col < cols; col++) {
+                matrix[row][col] -= (rowNow[col - globalCol] * coef);
             }
+        }
 
-            delete[] rowNow;
+        delete[] rowNow;
+        printMatrix(matrix, rows, cols);
+        printf("\n");
     }
 }
 
@@ -234,8 +246,8 @@ int searchSolutions(float** matrix, int rows, int cols, float** generalSolution)
     printEquations(matrix, rows, cols);
     cout << endl;
 
-    float* tempSolution = new float[cols];
     bool haveInfinity = false;
+    bool haveError = false;
 
     for (int row = 0; row < rows; row++) {
         float rightPart = matrix[row][cols - 1];
@@ -259,6 +271,7 @@ int searchSolutions(float** matrix, int rows, int cols, float** generalSolution)
 
         if (!nonZeroCount) {
             if (rightPart != 0) {
+                haveError = true;
                 result = SolutionCount(zero);
                 break;
             }
@@ -274,7 +287,7 @@ int searchSolutions(float** matrix, int rows, int cols, float** generalSolution)
     }
 
     if (haveInfinity) result = SolutionCount(infinity);
-    delete[] tempSolution;
+    if (haveError) result = SolutionCount(zero);
     return result;
 }
 
@@ -288,31 +301,36 @@ void solving(float** generalSolution, int rows, int cols, float* sol) {
 void checkGeneralSolution(float** matrix, int rows, int cols, float** generalSolution) {
     int freeCount = 0;
     for (int i = 0; i < rows; i++) if (generalSolution[i][i] == 0.0) freeCount++;
-    float* specificSolution = new float[cols - 1]{};
     int specSolIndex = 0;
-
-    for (int i = 0; i < rows; i++) {
-        if (generalSolution[i][i] == 0.0) {
-            if (specSolIndex < cols - 1)
-            specificSolution[specSolIndex++] = (RANDOM_FROM + (rand() % ((RANDOM_TO - RANDOM_FROM) + 1))) / 100;
+    float** newSolution = createMatrix(cols - 1, cols);
+    copyMatrix(generalSolution, newSolution, cols - 1, cols);
+    for (int row = 0; row < cols - 1; row++) {
+        if (newSolution[row][row] != 1.0) {
+            float randomValue = (-10000 + (rand() % (10000 - (-10000) + 1))) / (float)100.0;
+            newSolution[row][row] = 1.0;
+            newSolution[row][cols - 1] = randomValue;
+            printf("Пусть x%d = %.2f\n", row + 1, randomValue);
         }
     }
 
-    for (int freeNum = 0; freeNum < freeCount; freeNum++) {
-        //randomValues[valueNum] = (RANDOM_FROM + (rand() % ((RANDOM_TO - RANDOM_FROM) + 1))) / 100;
+    printf("\nТогда:\n");
 
-    }
+    float* sol = new float[cols - 1];
+    solving(newSolution, cols - 1, cols, sol);
+    for (int x = 0; x < cols - 1; x++) printf("x%d = %.2f\n", x + 1, sol[x]);
+    printf("\nПроверка полученного решения:\n");
+    checkSpecificSolution(matrix, rows, cols, sol);
 
     /*for (int i = 0; i < CHECKS_COUNT; i++) {
         for (int valueNum = 0; valueNum < freeCount; valueNum++) {
-            randomValues[valueNum] = (RANDOM_FROM + (rand() % ((RANDOM_TO - RANDOM_FROM) + 1))) / 100;
+            randomValues[valueNum] = (-10000 + (rand() % ((10000 - (-10000)) + 1))) / 100;
 
         }
 
 
     }*/
-
-    delete[] specificSolution;
+    delete[] sol;
+    freeMatrix(newSolution, cols - 1);
 }
 
 void checkSpecificSolution(float** sourceMatrix, int rows, int cols, float* sol) {

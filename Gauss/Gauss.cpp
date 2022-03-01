@@ -3,8 +3,6 @@
 
 using namespace std;
 
-#define CHECKS_COUNT 3
-
 enum SolutionCount {
     zero = 0,
     one = 1,
@@ -21,7 +19,6 @@ void printGeneralSolution(float**, int, int);
 void printEquations(float**, int, int);
 void printSpecificSolution(float*, int);
 
-// steps
 void toUpperTriangularView(float**, int, int);
 int searchSolutions(float**, int, int, float**);
 void solving(float**, int, int, float*);
@@ -318,17 +315,9 @@ void checkGeneralSolution(float** matrix, int rows, int cols, float** generalSol
     float* sol = new float[cols - 1];
     solving(newSolution, cols - 1, cols, sol);
     for (int x = 0; x < cols - 1; x++) printf("x%d = %.2f\n", x + 1, sol[x]);
+
     printf("\nПроверка полученного решения:\n");
     checkSpecificSolution(matrix, rows, cols, sol);
-
-    /*for (int i = 0; i < CHECKS_COUNT; i++) {
-        for (int valueNum = 0; valueNum < freeCount; valueNum++) {
-            randomValues[valueNum] = (-10000 + (rand() % ((10000 - (-10000)) + 1))) / 100;
-
-        }
-
-
-    }*/
     delete[] sol;
     freeMatrix(newSolution, cols - 1);
 }
